@@ -26,22 +26,41 @@ const app = express();
 // Webhook de Stripe debe ir antes que body parser
 app.use('/api/carrito/webhook-stripe', express.raw({ type: 'application/json' }));
 
-// Middlewares
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174'
-  ],
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://fundaciones-admin.onrender.com',
+  'https://fundaciones-ecommerce.onrender.com'
+];
+
+// Configurar CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Logging middleware
 app.use(morgan('dev'));
 
 // Body parser
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is running' });
+});
 
 // Rutas
 app.use('/api/fundaciones', fundacionRoutes);
